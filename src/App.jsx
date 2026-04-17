@@ -7,6 +7,7 @@ function App() {
   const [typeFilter, setTypeFilter] = useState("todos");
   const [categoryFilter, setCategoryFilter] = useState("todas");
   const [editingId, setEditingId] = useState(null);
+  const [collapsedMonths, setCollapsedMonths] = useState({});
   const [transactions, setTransactions] = useState(() => {
     const saved = localStorage.getItem("transactions");
     return saved ? JSON.parse(saved) : [];
@@ -38,6 +39,8 @@ function App() {
     typeFilter
   );
   
+  const grouped = groupByMonth(filtered);
+
   const balance = transactions.reduce((acc, mov) => {
     return mov.type === "ingreso" ? acc + mov.amount : acc - mov.amount;
   }, 0);
@@ -64,7 +67,7 @@ function App() {
       amount: parseFloat(amount),
       type,
       category,
-      fecha: Date.now(),
+      fecha: Date.now()
     };
 
     setTransactions(prev => [...prev, newTransaction]);
@@ -72,6 +75,27 @@ function App() {
 
   setAmount("");
   }
+
+  function groupByMonth(lista) {
+    const grupos = {};
+
+    lista.forEach((mov) => {
+      const fecha = mov.fecha ? new Date(mov.fecha) : new Date();
+
+      const year = fecha.getFullYear();
+      const month = (fecha.getMonth() + 1).toString().padStart(2, "0");
+
+      const key = `${year}-${month}`;
+
+      if (!grupos[key]) {
+        grupos[key] = [];
+      }
+
+      grupos[key].push(mov);
+    });
+
+  return grupos;
+}
 
   return (
     <div>
@@ -133,16 +157,56 @@ function App() {
         </select>
 
       <ul>
-        {filtered.map((mov) => (
-          <li key={mov.id}>
-            {mov.type} - ${mov.amount} ({mov.category})
-            <button onClick={() => handleEdit(mov)}>✏️</button>
-            <button onClick={() => handleDelete(mov.id)}>❌</button>
-          </li>
-        ))}
-      </ul>
+        {Object.entries(grouped)
+          .sort((a, b) => b[0].localeCompare(a[0])) // newest first
+          .map(([month, items]) => (
+            <li key={month}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <button 
+                  onClick={() => setCollapsedMonths(prev => ({
+                    ...prev,
+                    [month]: !prev[month]
+                  }))}
+                  style={{ cursor: "pointer", padding: "5px 10px" }}
+                >
+                  {collapsedMonths[month] ? "▶" : "▼"}
+                </button>
+                <h3 style={{ margin: 0 }}>{month}</h3>
+              </div>
+
+              {!collapsedMonths[month] && (
+                <ul>
+                {items.reverse().map((mov) => (
+                  <li 
+                    key={mov.id}
+                    style={{
+                      padding: "8px 12px",
+                      margin: "5px 0",
+                      borderRadius: "5px",
+                      backgroundColor: mov.type === "ingreso" ? "#d4edda" : "#f8d7da",
+                      color: mov.type === "ingreso" ? "#155724" : "#721c24",
+                      listStyleType: "none"
+                    }}
+                  >
+                    {mov.type} - ${mov.amount} ({mov.category})
+                    <button onClick={() => handleEdit(mov)}>✏️</button>
+                    <button onClick={() => handleDelete(mov.id)}>❌</button>
+                  </li>
+                ))}
+                </ul>
+              )}
+            </li>
+          ))}
+</ul>
     </div>
   );
+
+  function toggleMonth(month) {
+    setCollapsedMonths(prev => ({
+      ...prev,
+      [month]: !prev[month]
+    }));
+  }
 
   function handleEdit(mov) {
     setAmount(mov.amount);
