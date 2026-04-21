@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { groupByMonth } from "./utils/groupByMonth";
+import { getFilteredTransactions } from "./utils/filterTransactions";
 
 function App() {
   const incomeCategories = ["salario", "regalo", "extra", "reintegros"];
@@ -76,26 +78,7 @@ function App() {
   setAmount("");
   }
 
-  function groupByMonth(lista) {
-    const grupos = {};
-
-    lista.forEach((mov) => {
-      const fecha = mov.fecha ? new Date(mov.fecha) : new Date();
-
-      const year = fecha.getFullYear();
-      const month = (fecha.getMonth() + 1).toString().padStart(2, "0");
-
-      const key = `${year}-${month}`;
-
-      if (!grupos[key]) {
-        grupos[key] = [];
-      }
-
-      grupos[key].push(mov);
-    });
-
-  return grupos;
-}
+  
 
   return (
     <div>
@@ -176,7 +159,7 @@ function App() {
 
               {!collapsedMonths[month] && (
                 <ul>
-                {items.reverse().map((mov) => (
+                {[...items].reverse().map((mov) => (
                   <li 
                     key={mov.id}
                     style={{
@@ -219,19 +202,7 @@ function App() {
     setTransactions(prev => prev.filter(mov => mov.id !== id));
   }
 
-  function getFilteredTransactions(transactions, categoryFilter, typeFilter) {
-    let resultado = transactions;
-
-    if (categoryFilter !== "todas") {
-      resultado = resultado.filter(mov => mov.category === categoryFilter);
-    }
-
-    if (typeFilter !== "todos") {
-      resultado = resultado.filter(mov => mov.type === typeFilter);
-    }
-
-    return resultado;
-  }
+  
 }
 
 export default App; 
